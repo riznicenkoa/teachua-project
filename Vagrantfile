@@ -1,0 +1,37 @@
+Vagrant.configure("2") do |config|
+  config.vm.box = "ubuntu/jammy64"
+#database
+  config.vm.define "database" do |db|
+    db.vm.hostname = "teachua-database"
+    db.vm.network "private_network", ip: "192.168.56.12"
+
+    db.vm.provider "virtualbox" do |vb|
+      vb.memory = 1024
+      vb.cpus = 1
+    end
+  end
+
+
+#backend
+  config.vm.define "backend" do |backend|
+    backend.vm.hostname = "teachua-backend"
+    backend.vm.network "private_network",
+      ip: "192.168.56.10"
+    backend.vm.provider "virtualbox" do |vb|
+      vb.memory = 2048
+      vb.cpus = 2
+    end
+  end
+
+#frontend
+
+  config.vm.define "frontend" do |frontend|
+    frontend.vm.hostname = "teachua-frontend"
+    frontend.vm.network "private_network",
+      ip: "192.168.56.11"
+    frontend.vm.provider "virtualbox" do |vb|
+      vb.memory = 2048
+      vb.cpus = 2
+    end
+  end
+end
