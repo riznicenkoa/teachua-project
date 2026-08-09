@@ -1,0 +1,69 @@
+services:
+
+  db:
+    image: mariadb:11.4
+    container_name: teachua-db
+
+    environment:
+      MARIADB_ROOT_PASSWORD: TeachUA_root_2026!
+      MARIADB_DATABASE: teachua2
+      MARIADB_USER: teachua
+      MARIADB_PASSWORD: TeachUA_dev_2026!
+
+    volumes:
+      - mariadb_data:/var/lib/mysql
+      - ../backend/data.sql:/docker-entrypoint-initdb.d/01-data.sql:ro
+
+    ports:
+      - "3306:3306"
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "mariadb-admin ping -h localhost -uroot -p$$MARIADB_ROOT_PASSWORD --silent"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+
+    container_name: teachua-backend
+
+    environment:
+      JDBC_DRIVER: org.mariadb.jdbc.Driver
+      DATASOURCE_URL: jdbc:mariadb://db:3306/teachua2
+      DATASOURCE_USER: teachua
+      DATASOURCE_PASSWORD: TeachUA_dev_2026!
+
+    ports:
+      - "8080:8080"
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+      args:
+        REACT_APP_ROOT_SERVER: http://192.168.56.13:8080
+
+    container_name: teachua-frontend
+
+    ports:
+      - "3000:80"
+
+    depends_on:
+      - backend
+
+
+volumes:
+  mariadb_data:
