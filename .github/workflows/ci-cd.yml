@@ -1,0 +1,26 @@
+name: TeachUA CI/CD
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Build TeachUA
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Validate Docker Compose
+        working-directory: deployment
+        run: docker compose config
+
+      - name: Build backend and frontend
+        working-directory: deployment
+        run: docker compose build backend frontend
