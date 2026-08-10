@@ -1,0 +1,58 @@
+- name: Remove conflicting Docker packages
+  ansible.builtin.apt:
+    name:
+      - docker.io
+      - docker-compose
+      - docker-compose-v2
+      - containerd
+      - runc
+    state: absent
+
+- name: Install Docker repository dependencies
+  ansible.builtin.apt:
+    name:
+      - ca-certificates
+      - curl
+      - python3-debian
+    state: present
+    update_cache: yes
+
+- name: Add official Docker repository
+  ansible.builtin.deb822_repository:
+    name: docker
+    types:
+      - deb
+    uris: https://download.docker.com/linux/ubuntu
+    suites:
+      - "{{ ansible_distribution_release }}"
+    components:
+      - stable
+    architectures:
+      - amd64
+    signed_by: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+
+- name: Update apt cache after adding Docker repository
+  ansible.builtin.apt:
+    update_cache: yes
+
+- name: Install Docker Engine and Docker Compose
+  ansible.builtin.apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
+    state: present
+
+- name: Start and enable Docker
+  ansible.builtin.service:
+    name: docker
+    state: started
+    enabled: yes
+
+- name: Start TeachUA application
+  ansible.builtin.command:
+    cmd: docker compose up -d --build
+    chdir: "/home/vagrant/TeachUA-work/deployment"
