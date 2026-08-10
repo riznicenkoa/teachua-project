@@ -54,5 +54,5 @@
 
 - name: Start TeachUA application
   ansible.builtin.command:
-    cmd: docker compose up -d --build
+    cmd: docker compose up -d --build --scale backend=2
     chdir: "/home/vagrant/TeachUA-work/deployment"

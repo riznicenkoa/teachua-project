@@ -33,20 +33,32 @@ services:
       context: ./backend
       dockerfile: Dockerfile
 
-    container_name: teachua-backend
-
     environment:
       JDBC_DRIVER: org.mariadb.jdbc.Driver
       DATASOURCE_URL: jdbc:mariadb://db:3306/teachua2
       DATASOURCE_USER: teachua
       DATASOURCE_PASSWORD: TeachUA_dev_2026!
 
-    ports:
-      - "8080:8080"
+    expose:
+      - "8080"
 
     depends_on:
       db:
         condition: service_healthy
+
+
+  loadbalancer:
+    image: nginx:alpine
+    container_name: teachua-loadbalancer
+
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+
+    ports:
+      - "8080:80"
+
+    depends_on:
+      - backend
 
 
   frontend:
@@ -62,7 +74,7 @@ services:
       - "3000:80"
 
     depends_on:
-      - backend
+      - loadbalancer
 
 
 volumes:
