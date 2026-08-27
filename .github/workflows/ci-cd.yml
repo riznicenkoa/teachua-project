@@ -15,7 +15,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
 
       - name: Validate Docker Compose
         working-directory: deployment
@@ -24,3 +24,23 @@ jobs:
       - name: Build backend and frontend
         working-directory: deployment
         run: docker compose build backend frontend
+
+  deploy:
+    name: Deploy to AWS EC2
+    needs: build
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy application
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd /home/ubuntu/TeachUA-work
+            git pull origin main
+            cd deployment
+            docker compose up -d --build
+            docker compose ps
