@@ -39,7 +39,7 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            cd /home/ubuntu/TeachUA-work
+            cd /home/ubuntu/teachua-project
             git pull origin main
             cd deployment
             docker compose up -d --build
