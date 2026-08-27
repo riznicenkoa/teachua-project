@@ -1,0 +1,6 @@
+- name: Setup TeachUA web application
+  hosts: all
+  become: true
+
+  roles:
+    - webapp
