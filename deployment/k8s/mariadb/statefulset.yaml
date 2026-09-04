@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mariadb
+  namespace: teachua
+spec:
+  replicas: 1
+  serviceName: mariadb
+  selector: { matchLabels: { app: mariadb } }
+  template:
+    metadata:
+      labels: { app: mariadb }
+    spec:
+      containers:
+        - name: mariadb
+          image: mariadb:11.4
+          ports: [{ containerPort: 3306 }]
+          envFrom:
+            - secretRef: { name: mariadb-secret }
+          resources:
+            requests: { memory: "256Mi", cpu: "200m" }
+            limits:   { memory: "512Mi", cpu: "500m" }
+          volumeMounts:
+            - { name: data,  mountPath: /var/lib/mysql }
+            - { name: init,  mountPath: /docker-entrypoint-initdb.d }
+          readinessProbe:
+            exec:
+              command: ["sh","-c","mariadb-admin ping -h localhost -uroot -p$$MARIADB_ROOT_PASSWORD --silent"]
+            initialDelaySeconds: 15
+            periodSeconds: 10
+      volumes:
+        - name: init
+          configMap:
+            name: mariadb-init
+  volumeClaimTemplates:
+    - metadata: { name: data }
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources: { requests: { storage: 2Gi } }
