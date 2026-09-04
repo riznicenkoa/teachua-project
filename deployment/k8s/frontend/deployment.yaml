@@ -1,28 +1,99 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  annotations:
+    deployment.kubernetes.io/revision: "7"
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"name":"frontend","namespace":"teachua"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"frontend"}},"template":{"metadata":{"labels":{"app":"frontend"}},"spec":{"containers":[{"image":"nginx:alpine","name":"frontend","ports":[{"containerPort":80}],"volumeMounts":[{"mountPath":"/usr/share/nginx/html","name":"www"},{"mountPath":"/etc/nginx/conf.d","name":"conf"}]}],"volumes":[{"hostPath":{"path":"/home/ubuntu/teachua-project/deployment/frontend-build","type":"DirectoryOrCreate"},"name":"www"},{"configMap":{"name":"teachua-frontend-conf"},"name":"conf"}]}}}}
+  creationTimestamp: "2026-08-21T11:38:55Z"
+  generation: 7
   name: frontend
   namespace: teachua
+  resourceVersion: "504356"
+  uid: b684b33f-fcdd-4234-b260-9edd2d600f87
 spec:
+  progressDeadlineSeconds: 600
   replicas: 1
+  revisionHistoryLimit: 10
   selector:
-    matchLabels: { app: frontend }
+    matchLabels:
+      app: frontend
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
   template:
     metadata:
-      labels: { app: frontend }
+      labels:
+        app: frontend
     spec:
       containers:
-      - name: frontend
-        image: nginx:alpine
-        ports: [{ containerPort: 80 }]
+      - image: nginx:alpine
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /
+            port: 80
+            scheme: HTTP
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        name: frontend
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /
+            port: 80
+            scheme: HTTP
+          initialDelaySeconds: 3
+          periodSeconds: 3
+          successThreshold: 1
+          timeoutSeconds: 1
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
         volumeMounts:
-        - { name: www,  mountPath: /usr/share/nginx/html }
-        - { name: conf, mountPath: /etc/nginx/conf.d }
+        - mountPath: /usr/share/nginx/html
+          name: www
+        - mountPath: /etc/nginx/conf.d
+          name: conf
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
       volumes:
-      - name: www
-        hostPath:
+      - hostPath:
           path: /home/ubuntu/teachua-project/deployment/frontend-build
           type: DirectoryOrCreate
-      - name: conf
-        configMap:
+        name: www
+      - configMap:
+          defaultMode: 420
           name: teachua-frontend-conf
+        name: conf
+status:
+  availableReplicas: 1
+  conditions:
+  - lastTransitionTime: "2026-09-04T22:00:29Z"
+    lastUpdateTime: "2026-09-04T22:00:29Z"
+    message: Deployment has minimum availability.
+    reason: MinimumReplicasAvailable
+    status: "True"
+    type: Available
+  - lastTransitionTime: "2026-08-21T11:49:00Z"
+    lastUpdateTime: "2026-09-04T22:10:38Z"
+    message: Created new replica set "frontend-54f5ffbc6"
+    reason: NewReplicaSetCreated
+    status: "True"
+    type: Progressing
+  observedGeneration: 7
+  readyReplicas: 1
+  replicas: 1
+  terminatingReplicas: 0
+  unavailableReplicas: 1
