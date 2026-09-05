@@ -10,6 +10,7 @@ jobs:
     name: Deploy to AWS EC2
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
       - name: Deploy application
@@ -20,33 +21,26 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             set -euo pipefail
+            sudo -n true
 
             cd /home/ubuntu/teachua-project
-            git pull origin main
+            git fetch --all --prune
+            git switch -C main origin/main
 
-            # React build → hostPath → новий nginx-pod
             cd deployment/frontend
             rm -rf build node_modules/.cache
             CI=false REACT_APP_ROOT_SERVER=http://13.61.140.167:30080 \
               npm run build 2>&1 | tail -n 40
 
-            sudo rsync -a --delete build/ /home/ubuntu/teachua-project/deployment/frontend-build/
+            sudo rsync -a --delete build/ \
+              /home/ubuntu/teachua-project/deployment/frontend-build/
             sudo chmod -R a+rX /home/ubuntu/teachua-project/deployment/frontend-build
 
-            # Якщо новий бекенд-jar у release/ — імпортуємо в k3s і перезапускаємо backend
-            if ls /home/ubuntu/teachua-project/backend/target/*.jar >/dev/null 2>&1; then
-              sudo k3s ctr images import /home/ubuntu/teachua-project/backend/target/*.jar
-              sudo kubectl -n teachua rollout restart deploy/backend
-            fi
-
-            # K8s-маніфести та nginx-pod
             cd /home/ubuntu/teachua-project
             sudo kubectl apply -f deployment/k8s/ -n teachua
             sudo kubectl -n teachua delete pod -l app=frontend || true
             sudo kubectl -n teachua rollout status deploy/frontend --timeout=180s
 
-            # Sanity-checks
-            echo --- pods ---
             sudo kubectl -n teachua get pods,svc
-            curl -is http://localhost:30080/ | head -n 1
-            curl -is http://localhost:30080/dev/api/categories | head -n 1
+            curl -is --max-time 10 http://localhost:30080/ | head -n 3
+            curl -is --max-time 10 http://localhost:30080/dev/api/categories | head -n 3
