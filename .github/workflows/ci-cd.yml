@@ -4,30 +4,10 @@ on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
 
 jobs:
-  build:
-    name: Build TeachUA
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Validate Docker Compose
-        working-directory: deployment
-        run: docker compose config
-
-      - name: Build backend and frontend
-        working-directory: deployment
-        run: docker compose build backend frontend
-
   deploy:
     name: Deploy to AWS EC2
-    needs: build
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
 
@@ -39,8 +19,34 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
+            set -euo pipefail
+
             cd /home/ubuntu/teachua-project
             git pull origin main
-            cd deployment
-            docker compose up -d --build
-            docker compose ps
+
+            # React build → hostPath → новий nginx-pod
+            cd deployment/frontend
+            rm -rf build node_modules/.cache
+            CI=false REACT_APP_ROOT_SERVER=http://13.61.140.167:30080 \
+              npm run build 2>&1 | tail -n 40
+
+            sudo rsync -a --delete build/ /home/ubuntu/teachua-project/deployment/frontend-build/
+            sudo chmod -R a+rX /home/ubuntu/teachua-project/deployment/frontend-build
+
+            # Якщо новий бекенд-jar у release/ — імпортуємо в k3s і перезапускаємо backend
+            if ls /home/ubuntu/teachua-project/backend/target/*.jar >/dev/null 2>&1; then
+              sudo k3s ctr images import /home/ubuntu/teachua-project/backend/target/*.jar
+              sudo kubectl -n teachua rollout restart deploy/backend
+            fi
+
+            # K8s-маніфести та nginx-pod
+            cd /home/ubuntu/teachua-project
+            sudo kubectl apply -f deployment/k8s/ -n teachua
+            sudo kubectl -n teachua delete pod -l app=frontend || true
+            sudo kubectl -n teachua rollout status deploy/frontend --timeout=180s
+
+            # Sanity-checks
+            echo --- pods ---
+            sudo kubectl -n teachua get pods,svc
+            curl -is http://localhost:30080/ | head -n 1
+            curl -is http://localhost:30080/dev/api/categories | head -n 1
