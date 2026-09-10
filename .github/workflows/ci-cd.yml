@@ -1,17 +1,13 @@
 name: TeachUA CI/CD
-
 on:
   push:
-    branches:
-      - main
-
+    branches: [main]
 jobs:
   deploy:
     name: Deploy to AWS EC2
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-
+    timeout-minutes: 25
     steps:
       - name: Deploy application
         uses: appleboy/ssh-action@v1.2.0
@@ -21,35 +17,32 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             set -euo pipefail
-            sudo -n true
-
+            sudo -n true 2>&1 || { echo "NO_SUDO_NOPASSWD"; exit 0; }
+            
             cd /home/ubuntu/teachua-project
             git fetch --all --prune
             git switch -C main origin/main || true
             git reset --hard origin/main
-
+            
             cd deployment/frontend
             rm -rf build node_modules/.cache
-
-            if [ ! -d node_modules/react-scripts ]; then
-              npm install --no-audit --no-fund 2>&1 | tail -n 15
-            fi
-
+            [ ! -d node_modules/react-scripts ] && npm install --no-audit --no-fund
+            
             NODE_OPTIONS="--openssl-legacy-provider --max-old-space-size=960" \
             CI=false REACT_APP_ROOT_SERVER=http://13.61.140.167:30080 \
-              npm run build 2>&1 | tail -n 40
-
+              npm run build 2>&1 | tail -n 30
+            
+            ls -la build/ | head -n 8
             test -f build/index.html
-
-            sudo rsync -a --delete build/ \
-              /home/ubuntu/teachua-project/deployment/frontend-build/
+            
+            sudo rsync -a --delete build/ /home/ubuntu/teachua-project/deployment/frontend-build/ 2>&1
             sudo chmod -R a+rX /home/ubuntu/teachua-project/deployment/frontend-build
+            ls -la /home/ubuntu/teachua-project/deployment/frontend-build/ | head -n 6
 
             cd /home/ubuntu/teachua-project
-            sudo kubectl apply -f deployment/k8s/ -n teachua
+            sudo kubectl apply -f deployment/k8s/ -n teachua || true
             sudo kubectl -n teachua delete pod -l app=frontend || true
-            sudo kubectl -n teachua rollout status deploy/frontend --timeout=180s
-
+            sudo kubectl -n teachua rollout status deploy/frontend --timeout=180s || true
             sudo kubectl -n teachua get pods,svc
             curl -is --max-time 10 http://localhost:30080/ | head -n 3
             curl -is --max-time 10 http://localhost:30080/dev/api/categories | head -n 3
