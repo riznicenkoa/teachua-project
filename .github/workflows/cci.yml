@@ -27,6 +27,26 @@ jobs:
       - name: Maven verify (compile + unit tests)
         run: mvn -B -q -e verify -Dspring.profiles.active=test
 
+      - name: Upload Maven test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-surefire-reports
+          path: deployment/backend/target/surefire-reports
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Upload backend target (jars/wars)
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-target
+          path: |
+            deployment/backend/target/*.jar
+            deployment/backend/target/*.war
+          if-no-files-found: warn
+          retention-days: 7
+
   frontend-lint-and-build:
     runs-on: ubuntu-latest
     timeout-minutes: 12
@@ -49,3 +69,27 @@ jobs:
           CI: 'false'
           REACT_APP_ROOT_SERVER: http://localhost:30080
         run: NODE_OPTIONS="--openssl-legacy-provider" npm run build
+
+      - name: Save ESLint log to artifact
+        if: always()
+        run: |
+          mkdir -p lint
+          npm run lint --if-present > lint/eslint.log 2>&1 || true
+
+      - name: Upload CRA frontend build
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: deployment/frontend/build
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload ESLint log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-eslint
+          path: deployment/frontend/lint
+          if-no-files-found: warn
+          retention-days: 14
