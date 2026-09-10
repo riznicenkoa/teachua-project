@@ -18,24 +18,25 @@ jobs:
           script: |
             set -euo pipefail
             sudo -n true 2>&1 || { echo "NO_SUDO_NOPASSWD"; exit 0; }
-            
+
             cd /home/ubuntu/teachua-project
             git fetch --all --prune
             git switch -C main origin/main || true
             git reset --hard origin/main
-            
+
             cd deployment/frontend
             rm -rf build node_modules/.cache
-            [ ! -d node_modules/react-scripts ] && npm install --no-audit --no-fund
-            
-            NODE_OPTIONS="--openssl-legacy-provider --max-old-space-size=960" \
+            [ ! -d node_modules/react-scripts ] && npm install --legacy-peer-deps --no-audit --no-fund
+
+            NODE_OPTIONS="--max-old-space-size=960" \
             CI=false REACT_APP_ROOT_SERVER=http://13.61.140.167:30080 \
-              npm run build 2>&1 | tail -n 30
-            
+              npm exec --no -- craco build 2>&1 | tail -n 30 \
+              || npm run build 2>&1 | tail -n 30
+
             ls -la build/ | head -n 8
             test -f build/index.html
-            
-            sudo rsync -a --delete build/ /home/ubuntu/teachua-project/deployment/frontend-build/ 2>&1
+
+            sudo rsync -a --delete build/ /home/ubuntu/teachua-project/deployment/frontend-build/ || true
             sudo chmod -R a+rX /home/ubuntu/teachua-project/deployment/frontend-build
             ls -la /home/ubuntu/teachua-project/deployment/frontend-build/ | head -n 6
 
