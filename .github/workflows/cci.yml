@@ -41,7 +41,7 @@ jobs:
           cache: npm
           cache-dependency-path: deployment/frontend/package-lock.json
       - name: Install dependencies
-        run: npm ci --no-audit --no-fund
+        run: npm ci --legacy-peer-deps --no-audit --no-fund
       - name: ESLint
         run: npm run lint --if-present
       - name: Build (smoke check)
