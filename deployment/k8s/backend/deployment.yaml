@@ -12,23 +12,21 @@ spec:
     spec:
       containers:
         - name: backend
-          image: maven:3.9-eclipse-temurin-17
-          workingDir: /app
-          command: ["sh","-c","cp -r /src/. /app/ && mvn -B -q spring-boot:run -Dspring-boot.run.profiles=default"]
+          image: ghcr.io/riznicenkoa/teachua-backend:1
+          imagePullPolicy: IfNotPresent
+          command: ["java","-jar","/app.war"]
           env:
-            - { name: JDBC_DRIVER,       value: org.mariadb.jdbc.Driver }
-            - { name: DATASOURCE_URL,    value: jdbc:mariadb://mariadb:3306/teachua2 }
-            - { name: DATASOURCE_USER,   valueFrom: { secretKeyRef: { name: mariadb-secret, key: MARIADB_USER } } }
+            - { name: JAVA_OPTS,        value: "-Xmx384m" }
+            - { name: JDBC_DRIVER,      value: org.mariadb.jdbc.Driver }
+            - { name: DATASOURCE_URL,   value: jdbc:mariadb://mariadb:3306/teachua2 }
+            - { name: DATASOURCE_USER,  valueFrom: { secretKeyRef: { name: mariadb-secret, key: MARIADB_USER } } }
             - { name: DATASOURCE_PASSWORD, valueFrom: { secretKeyRef: { name: mariadb-secret, key: MARIADB_PASSWORD } } }
-            - { name: MAVEN_OPTS,        value: "-Xmx384m" }
           ports: [{ containerPort: 8080 }]
           resources:
             requests: { memory: "512Mi", cpu: "300m" }
             limits:   { memory: "900Mi", cpu: "800m" }
-          volumeMounts:
-            - { name: src, mountPath: /src }
-      volumes:
-        - name: src
-          hostPath:
-            path: /home/ubuntu/teachua-project/deployment/backend
-            type: Directory
+          readinessProbe:
+            httpGet: { path: /dev/api/categories, port: 8080 }
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 6

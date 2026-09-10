@@ -10,3 +10,4 @@ deployment/frontend-build/
 .env
 .env.*
 *.local
+.venv/
