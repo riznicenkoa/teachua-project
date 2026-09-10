@@ -30,19 +30,22 @@ jobs:
 
             NODE_OPTIONS="--max-old-space-size=960" \
             CI=false REACT_APP_ROOT_SERVER=http://13.61.140.167:30080 \
-              npm exec --no -- craco build 2>&1 | tail -n 30 \
-              || npm run build 2>&1 | tail -n 30
+              npm run build 2>&1 | tail -n 30
 
             ls -la build/ | head -n 8
             test -f build/index.html
 
-            sudo rsync -a --delete build/ /home/ubuntu/teachua-project/deployment/frontend-build/ || true
+            sudo rsync -a --delete build/ /home/ubuntu/teachua-project/deployment/frontend-build/ || { echo "NO_RSYNC_OK"; exit 0; }
             sudo chmod -R a+rX /home/ubuntu/teachua-project/deployment/frontend-build
             ls -la /home/ubuntu/teachua-project/deployment/frontend-build/ | head -n 6
 
             cd /home/ubuntu/teachua-project
-            sudo kubectl apply -f deployment/k8s/ -n teachua || true
-            sudo kubectl -n teachua delete pod -l app=frontend || true
+
+            sudo kubectl -n teachua get rs -l app=frontend -o jsonpath='{range .items[?(@.spec.replicas==0)]}{.metadata.name}{"\n"}{end}' \
+              | xargs -r sudo kubectl -n teachua delete rs
+
+            sudo kubectl apply -f deployment/k8s/ -n teachua
+            sudo kubectl -n teachua delete pod -l app=frontend --grace-period=0 --force 2>&1 | tail -n 6 || true
             sudo kubectl -n teachua rollout status deploy/frontend --timeout=180s || true
             sudo kubectl -n teachua get pods,svc
             curl -is --max-time 10 http://localhost:30080/ | head -n 3
