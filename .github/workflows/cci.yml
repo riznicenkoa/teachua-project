@@ -39,6 +39,7 @@ jobs:
         with:
           node-version: '20'
           cache: npm
+          cache-dependency-path: deployment/frontend/package-lock.json
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
       - name: ESLint
