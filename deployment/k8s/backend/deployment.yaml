@@ -21,14 +21,24 @@ spec:
             - { name: DATASOURCE_USER,   valueFrom: { secretKeyRef: { name: mariadb-secret, key: MARIADB_USER } } }
             - { name: DATASOURCE_PASSWORD, valueFrom: { secretKeyRef: { name: mariadb-secret, key: MARIADB_PASSWORD } } }
             - { name: MAVEN_OPTS,        value: "-Xmx384m" }
+        - { name: JAVA_TOOL_OPTIONS, value: "-javaagent:/otel/otel-agent.jar" }
+        - { name: OTEL_SERVICE_NAME, value: "teachua-backend" }
+        - { name: OTEL_EXPORTER_OTLP_ENDPOINT, value: "http://jaeger:4317" }
+        - { name: OTEL_TRACES_EXPORTER, value: "otlp" }
+        - { name: OTEL_PROPAGATORS, value: "tracecontext,baggage" }
           ports: [{ containerPort: 8080 }]
           resources:
             requests: { memory: "512Mi", cpu: "300m" }
             limits:   { memory: "900Mi", cpu: "800m" }
           volumeMounts:
             - { name: src, mountPath: /src }
+          - { name: otel, mountPath: /otel }
       volumes:
         - name: src
           hostPath:
             path: /home/ubuntu/teachua-project/deployment/backend
+            type: Directory
+        - name: otel
+          hostPath:
+            path: /home/ubuntu/teachua-project/deployment/backend/otel
             type: Directory
