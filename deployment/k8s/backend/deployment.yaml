@@ -12,7 +12,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: ghcr.io/riznicenkoa/teachua-backend:1
+          image: ghcr.io/riznicenkoa/teachua-backend:2
           imagePullPolicy: IfNotPresent
           command: ["java","-jar","/app.war"]
           env:
