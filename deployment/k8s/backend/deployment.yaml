@@ -11,10 +11,14 @@ spec:
     metadata:
       labels: { app: backend }
     spec:
+      automountServiceAccountToken: false
       containers:
         - name: backend
           image: maven:3.9-eclipse-temurin-17
           workingDir: /app
+          securityContext:
+            allowPrivilegeEscalation: false
+            seccompProfile: { type: RuntimeDefault }
           command: ["sh","-c","cp -r /src/. /app/ && mvn -B -q spring-boot:run -Dspring-boot.run.profiles=default"]
           env:
             - { name: JDBC_DRIVER, value: org.mariadb.jdbc.Driver }

@@ -11,9 +11,13 @@ spec:
     metadata:
       labels: { app: mariadb }
     spec:
+      automountServiceAccountToken: false
       containers:
         - name: mariadb
           image: mariadb:11.4
+          securityContext:
+            allowPrivilegeEscalation: false
+            seccompProfile: { type: RuntimeDefault }
           ports: [{ containerPort: 3306 }]
           envFrom:
             - secretRef: { name: mariadb-secret }
