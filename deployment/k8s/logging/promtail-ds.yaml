@@ -14,7 +14,6 @@ spec:
           image: grafana/promtail:2.9.3
           args:
             - -config.file=/etc/promtail/promtail.yaml
-            - -positions.filename=/tmp/positions.yaml
           ports: [{ containerPort: 9080, name: http }]
           volumeMounts:
             - { name: cfg, mountPath: /etc/promtail }
