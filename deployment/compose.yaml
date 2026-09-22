@@ -5,10 +5,10 @@ services:
     container_name: teachua-db
 
     environment:
-      MARIADB_ROOT_PASSWORD: CHANGEME
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:?set it in .env}
       MARIADB_DATABASE: teachua2
       MARIADB_USER: teachua
-      MARIADB_PASSWORD: CHANGEME
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD:?set it in .env}
 
     volumes:
       - mariadb_data:/var/lib/mysql
@@ -37,7 +37,7 @@ services:
       JDBC_DRIVER: org.mariadb.jdbc.Driver
       DATASOURCE_URL: jdbc:mariadb://db:3306/teachua2
       DATASOURCE_USER: teachua
-      DATASOURCE_PASSWORD: CHANGEME
+      DATASOURCE_PASSWORD: ${MARIADB_PASSWORD:?set it in .env}
 
     expose:
       - "8080"

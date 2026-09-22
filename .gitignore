@@ -11,3 +11,10 @@ deployment/frontend-build/
 .env.*
 *.local
 .venv/
+
+# runtime logs / backups
+ddagent-install.log
+*.bak
+*.orig
+deployment/k8s/backend/deployment.yaml.bak
+deployment/k8s/backend/deployment.yaml.orig

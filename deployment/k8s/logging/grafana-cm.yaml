@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-config
+  namespace: teachua
+data:
+  grafana.ini: |
+    [server]
+    domain = 13.61.140.167
+    root_url = http://13.61.140.167:30030/
+    [security]
+    admin_user = admin
+    admin_password = admin
+    [auth.anonymous]
+    enabled = true
+    org_role = Admin
+    [users]
+    allow_sign_up = false
+  datasources.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: Loki
+        type: loki
+        access: proxy
+        url: http://loki:3100
+        isDefault: true
