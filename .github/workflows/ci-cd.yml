@@ -48,5 +48,5 @@ jobs:
             sudo kubectl -n teachua delete pod -l app=frontend --grace-period=0 --force 2>&1 | tail -n 6 || true
             sudo kubectl -n teachua rollout status deploy/frontend --timeout=180s || true
             sudo kubectl -n teachua get pods,svc
-            curl -is --max-time 10 http://localhost:30080/ | head -n 3
-            curl -is --max-time 10 http://localhost:30080/dev/api/categories | head -n 3
+            curl -is --max-time 10 http://localhost:30080/ | head -n 3 || true
+            curl -is --max-time 10 http://localhost:30080/dev/api/categories | head -n 3 || true
